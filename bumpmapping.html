@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <script src="libs/three.js"></script>
+    <script src="libs/OrbitControls.js"></script>
+    <script src="libs/jquery-2.1.0.js" type="text/javascript" charset="utf-8"></script>
+    <script src="libs/shaderloader/ShaderLoader.min.js" type="text/javascript" charset="utf-8"></script>
+    <script data-src="shader/bump_texture.vert" type="x-shader/x-vertex" data-name="bump_texture"></script>
+    <script data-src="shader/bump_texture.frag" type="x-shader/x-fragment" data-name="bump_texture"></script>
+    <script data-src="shader/bump_parallax.vert" type="x-shader/x-vertex" data-name="bump_parallax"></script>
+    <script data-src="shader/bump_parallax.frag" type="x-shader/x-fragment" data-name="bump_parallax"></script>
+    <script data-src="shader/bump_normal.vert" type="x-shader/x-vertex" data-name="bump_normal"></script>
+    <script data-src="shader/bump_normal.frag" type="x-shader/x-fragment" data-name="bump_normal"></script>
+    <style>
+    html {
+        height: 100%;
+        margin: 0px;
+        padding: 0;
+    }
+    body {
+        height: 100%;
+        margin: 0px;
+        padding: 0;
+    }
+    #viewer {
+        height: 100%;
+        width: 100%;
+        margin: 0px;
+        padding: 0;
+    }
+    #viewer canvas {
+        margin: 0px;
+        padding: 0;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="viewer">
+
+    </div>
+    <script type="text/javascript">
+    var scene, camera, renderer, controls, clock;
+    var texturePlane, heightPlane, normalPlane;
+
+    var lightPosition = new THREE.Vector3(0.0, 0.0, 40.0);
+    var pointLight, pointLightHelper;
+
+    var bump_texture_vs, bump_texture_fs;
+    var bump_normal_vs, bump_normal_fs;
+    var bump_parallax_vs, bump_parallax_fs;
+
+    var viewerWidth, viewerHeight;
+
+    $(window).load(function() {
+        SHADER_LOADER.load(
+            function(data) {
+                bump_texture_vs = data.bump_texture.vertex;
+                bump_texture_fs = data.bump_texture.fragment;
+                bump_normal_vs = data.bump_normal.vertex;
+                bump_normal_fs = data.bump_normal.fragment;
+                bump_parallax_vs = data.bump_parallax.vertex;
+                bump_parallax_fs = data.bump_parallax.fragment;
+
+                viewerWidth = $("#viewer").innerWidth();
+                viewerHeight = $("#viewer").innerHeight();
+
+                initViewer();
+                animate();
+            }
+        );
+    });
+
+    $(window).resize(function() {
+        camera.aspect = viewerWidth / viewerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(viewerWidth, viewerHeight);
+    });
+
+    function initViewer() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, viewerWidth / viewerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer();
+        clock = new THREE.Clock;
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        renderer.setClearColor(0xEEEEEE, 1.0);
+        renderer.clear();
+        renderer.setSize(viewerWidth, viewerHeight);
+
+        $("#viewer").append(renderer.domElement);
+
+        camera.position.z = 40;
+
+        addHelpers();
+        drawScene();
+    }
+
+    function addHelpers() {
+        var axes = new THREE.AxisHelper(50);
+        axes.position.set(0, 0, 0);
+        scene.add(axes);
+
+        var gridXZ = new THREE.GridHelper(100, 10);
+        gridXZ.setColors(new THREE.Color(0xFFC0CB), new THREE.Color(0x8f8f8f));
+        gridXZ.position.set(0, 0, 0);
+        scene.add(gridXZ);
+
+        pointLight = new THREE.PointLight(0xff0000, 1, 100);
+        scene.add(pointLight);
+
+        var sphereSize = 2;
+        pointLightHelper = new THREE.PointLightHelper(pointLight, sphereSize);
+        scene.add(pointLightHelper);
+    }
+
+    function drawScene() {
+        var settings = {
+            ambientColor: {
+                x: .4,
+                y: .3,
+                z: .2
+            },
+            diffuseColor: {
+                x: .1,
+                y: .1,
+                z: .1
+            },
+            specularColor: {
+                x: .4,
+                y: .2,
+                z: .2
+            },
+            shininess: 30
+        };
+
+        var uniforms = {
+            lightPosition: {
+                type: "v3",
+                value: lightPosition
+            },
+            tangent: {
+                type: "v3",
+                value: new THREE.Vector3(1.0, 0.0, 0.0)
+            },
+            colorMap: {
+                type: "t",
+                value: THREE.ImageUtils.loadTexture('textures/mur_Ambiant.bmp')
+            },
+            normalMap: {
+                type: "t",
+                value: THREE.ImageUtils.loadTexture('textures/mur_NormalMap.bmp')
+            },
+            heightMap: {
+                type: "t",
+                value: THREE.ImageUtils.loadTexture('textures/mur_Hauteur.bmp')
+            },
+            ambientColor: {
+                type: "v3",
+                value: new THREE.Vector3(0.6, 0.6, 0.6)
+            },
+            diffuseColor: {
+                type: "v3",
+                value: new THREE.Vector3(0.8, 0.8, 0.8)
+            },
+            spectColor: {
+                type: "v3",
+                value: new THREE.Vector3(0.3, 0.3, 0.3)
+            },
+            shininess: {
+                type: "f",
+                value: 1.0
+            },
+            scale: {
+                type: "f",
+                value: 0.04
+            },
+            bias: {
+                type: "f",
+                value: -0.02
+            }
+        };
+        // merge default light-Uniforms
+        var lightuniforms = THREE.UniformsLib['lights'];
+        for (var key in lightuniforms) {
+            uniforms[key] = lightuniforms[key];
+        }
+
+        // PLANE WITH TEXTURE
+        var textureMaterial = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: bump_texture_vs,
+            fragmentShader: bump_texture_fs
+        });
+
+        texturePlane = new THREE.Mesh(new THREE.PlaneGeometry(15, 15, 100, 100), textureMaterial);
+        texturePlane.position.set(-20, 0, 0);
+        scene.add(texturePlane);
+
+        // PLANE WITH NORMAL MAP
+        var normalMaterial = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: bump_normal_vs,
+            fragmentShader: bump_normal_fs,
+            lights: true
+        });
+
+        heightPlane = new THREE.Mesh(new THREE.PlaneGeometry(15, 15, 100, 100), normalMaterial);
+        heightPlane.position.set(0, 0, 0);
+        scene.add(heightPlane);
+
+        // PLANE WITH PARALLAX MAP
+        var parallaxMaterial = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: bump_parallax_vs,
+            fragmentShader: bump_parallax_fs
+        });
+        normalPlane = new THREE.Mesh(new THREE.PlaneGeometry(15, 15, 100, 100), parallaxMaterial);
+        normalPlane.position.set(20, 0, 0);
+        scene.add(normalPlane);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        var t = clock.getElapsedTime();
+        var mult = 3.0;
+        var radius = 20.0;
+        var dist = 10.0;
+        lightPosition.x = Math.sin(t*mult) * radius;
+        lightPosition.y = Math.cos(t*mult) * radius;
+        lightPosition.z = dist;
+        pointLight.position.set( lightPosition.x, lightPosition.y, lightPosition.z );
+        render();
+    }
+
+    function render() {
+        renderer.render(scene, camera);
+    }
+    </script>
+
+</body>
+
+</html>
