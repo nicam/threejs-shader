@@ -6,15 +6,18 @@ void main(void)
 {
   //TODO: is this the right way to transform world position?
   // Normalize
-  vec3 worldPosition = normalize(modelMatrix * vec4(position, 1.0)).xyz;
-  // vec3 worldPosition = normalize(modelMatrix * position);
-  vec3 worldSpaceNormal = normalize(normalMatrix * normal);
+  // vec3 worldPosition = normalize(modelMatrix * vec4(position, 1.0)).xyz;
+  vec3 worldNormal = normalize(normalMatrix * normal);
 
+  // vec3 worldPosition = normalize(modelMatrix * position);
+  // Transform position into worldSpace
+  vec3 worldPosition = normalize(modelMatrix * vec4(position, 1.0)).xyz;
+
+  // Calculate view direction
   vec3 viewDirection = normalize(worldPosition - cameraPosition);
-  // reflect
 
   //TODO: it seems that reflectiondirection with normal in world space thers really weird
-  reflectedDirection = reflect(viewDirection, normal);
+  reflectedDirection = normalize(reflect(viewDirection, normal));
 
   lambert = max(0.0, dot(normal, lightPosition));
 

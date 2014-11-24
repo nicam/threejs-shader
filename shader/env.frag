@@ -11,5 +11,4 @@ void main(void)
   vec3 diffuse = diffuseColor * lambert;
 
   gl_FragColor = vec4(mix(baseColor, diffuse, mixValue), 1.0);
-  //gl_FragColor = vec4(0.0,0.0,0.0,1.0);
 }
