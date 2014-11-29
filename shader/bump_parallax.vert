@@ -7,7 +7,8 @@ varying vec3 toCamera;
 
 void main(void)
 {
-    vec3 binormal = cross(normal, tangent);
+    vec3 worldNormal = normalize(modelMatrix * vec4(normal, 0.0)).xyz;
+    vec3 binormal = cross(worldNormal, tangent);
     mat3 tbn = mat3(
         vec3(tangent.x, tangent.y, tangent.z),
         vec3(binormal.x, binormal.y, binormal.z),

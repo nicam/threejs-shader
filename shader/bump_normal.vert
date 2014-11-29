@@ -8,12 +8,18 @@ varying vec3 toCamera;
 void main(void)
 {
     // http://www.txutxi.com/?p=316
-    vec3 binormal = cross(normal, tangent);
+    // normal convert to worldSpace
+    // tanget is already in worldspace but should be converted because normaly you get it in object space
+    // better use attribute tangent instead of uniform tangent.
+    //TODO: try with attribute
+    vec3 worldNormal = normalize(modelMatrix * vec4(normal, 0.0)).xyz;
+    vec3 binormal = cross(worldNormal, tangent);
     mat3 tbn = mat3(
         vec3(tangent.x, tangent.y, tangent.z),
         vec3(binormal.x, binormal.y, binormal.z),
         vec3(normal.x, normal.y, normal.z)
     );
+    // 
 
     // Richtung zum Licht, position = aktueller Vertex im Objectspace, transform to world space
     toLight = lightPosition - (modelMatrix * vec4(position, 1.0)).xyz;
