@@ -14,10 +14,10 @@ void main(void)
         vec3(normal.x, normal.y, normal.z)
     );
 
-    toLight = lightPosition - position;
+    toLight = lightPosition - (modelMatrix * vec4(position, 1.0)).xyz;
     toLight = normalize(tbn * toLight);
 
-    toCamera = cameraPosition - position;
+    toCamera = cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz;
     toCamera = normalize(tbn * toCamera);
 
     vUv = uv;

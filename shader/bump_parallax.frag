@@ -16,21 +16,21 @@ void main(void)
 {
     float height = texture2D(heightMap, vUv).rgb.x;
     float hsb = height * scale + bias;
-    vec2 eyeVector = vec2(toCamera.x, toCamera.y);
-    vec2 newCoord = vUv + hsb * eyeVector;
+    vec2 eyeVec = vec2(toCamera.x, toCamera.y);
+    vec2 newCoord = vUv + hsb * eyeVec;
 
-    vec3 textColor = texture2D(colorMap, newCoord).rgb;
+    vec3 textureColor = texture2D(colorMap, newCoord).rgb;
     vec3 norm = texture2D(normalMap, newCoord).rgb;
-    norm = 2.0*norm-1.0;
+    norm = 2.0 * norm -1.0;
 
     vec3 halfVector = normalize(toLight + toCamera);
     float lambert = max(0.0, dot(norm, toLight));
     float phong = max(0.0, dot(norm, halfVector));
     float specularPower = pow(phong, shininess);
 
-    vec3 diffuse = diffuseColor*lambert;
-    vec3 specular = spectColor*specularPower;
+    vec3 diffuse = diffuseColor * lambert;
+    vec3 specular = spectColor * specularPower;
 
-    vec3 color = ambientColor*textColor + diffuse*textColor+specular;
+    vec3 color = ambientColor * textureColor + diffuse * textureColor + specular;
     gl_FragColor = vec4(color, 1.0);
 }

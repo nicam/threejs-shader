@@ -16,7 +16,7 @@ void main(void)
     //Lesen Sie nun die Normale aus der Normal Map mit den aktuellen Texturkoordinaten
     vec3 norm = texture2D(normalMap, vUv).rgb;
     // Skalieren Sie also das Resultat mit dem Faktor 2 und subtrahieren Sie davon 1
-    norm = 2.0*norm-1.0;
+    norm = 2.0 * norm - 1.0;
 
     vec3 halfVector = normalize(toLight + toCamera);
     float lambert = max(0.0, dot(norm, toLight));
